@@ -11,7 +11,8 @@ library(readxl)
 library(haven)
 ```
 
-##Problem 1
+## Problem 1
+#### clean the data in pols-month.csv
 ```{r}
 pols_month_df=
   read_csv("hw2data/pols-month.csv")|>
@@ -19,27 +20,29 @@ pols_month_df=
   separate(mon,into=c("year","month","day"), sep = "-")|>
   mutate(month=case_match(
     month,
-    "01"~"January",
-    "02"~"February",
-    "03"~"March",
-    "04"~"April",
+    "01"~"Jan",
+    "02"~"Feb",
+    "03"~"Mar",
+    "04"~"Apr",
     "05"~"May",
-    "06"~"June",
-    "07"~"July",
-    "08"~"August",
-    "09"~"September",
-    "10"~"October",
-    "11"~"November",
-    "12"~"December"
+    "06"~"Jun",
+    "07"~"Jul",
+    "08"~"Aug",
+    "09"~"Sep",
+    "10"~"Oct",
+    "11"~"Nov",
+    "12"~"Dec"
   ))|>
   mutate(president=case_when(
     prez_dem==1~"dem",
     prez_gop==1~"gop"
   ))|>
-  select(-prez_dem,-prez_gop,-day)
+  select(-prez_dem,-prez_gop,-day)|>
+  mutate(year=as.integer(year))
   
 ```
 
+#### clean the data in snp.csv
 ```{r}
 snp_df=
   read_csv("hw2data/snp.csv")|>
@@ -47,23 +50,46 @@ snp_df=
   separate(date,into=c("month","day","year"), sep = "/")|>
   mutate(month=case_match(
     month,
-    "1"~"January",
-    "2"~"February",
-    "3"~"March",
-    "4"~"April",
-    "5"~"May",
-    "6"~"June",
-    "7"~"July",
-    "8"~"August",
-    "9"~"September",
-    "10"~"October",
-    "11"~"November",
-    "12"~"December"
+    "01"~"Jan",
+    "02"~"Feb",
+    "03"~"Mar",
+    "04"~"Apr",
+    "05"~"May",
+    "06"~"Jun",
+    "07"~"Jul",
+    "08"~"Aug",
+    "09"~"Sep",
+    "10"~"Oct",
+    "11"~"Nov",
+    "12"~"Dec"
   ))|>
   relocate(year,month)|>
-  select(-day)
+  select(-day)|>
+  mutate(
+    year = as.integer(year),                
+    year = if_else(year <= 20, 2000 + year, 1900 + year)
+  )
 ```
 
+#### clean the data in unemployment.csv
+```{r}
+unemployment_df=
+  read_csv("hw2data/unemployment.csv")|>
+  pivot_longer(
+    Jan:Dec,
+    names_to = "month",
+    values_to = "unemployment_rate"
+  )|>
+  janitor::clean_names()
+```
+
+#### join dataset
+```{r}
+pols_snp_df=
+  left_join(pols_month_df,snp_df, by=c("year","month"))
+pols_snp_unemployment_df=
+  left_join(pols_snp_df,unemployment_df,by=c("year","month"))
+```
 
 ```{r}
 trash_wheel_df=
