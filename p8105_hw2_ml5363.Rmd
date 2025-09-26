@@ -89,8 +89,10 @@ pols_snp_df=
   left_join(pols_month_df,snp_df, by=c("year","month"))
 pols_snp_unemployment_df=
   left_join(pols_snp_df,unemployment_df,by=c("year","month"))
+write_csv(pols_snp_unemployment_df,"HW2_Problem_1.csv")
 ```
 
+## Problem 2
 ```{r}
 trash_wheel_df=
   read_excel("hw2data/202409 Trash Wheel Collection Data.xlsx",na=c("NA",".",""))|>
