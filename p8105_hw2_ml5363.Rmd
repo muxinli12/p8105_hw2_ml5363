@@ -15,7 +15,7 @@ library(haven)
 #### clean the data in pols-month.csv
 ```{r}
 pols_month_df=
-  read_csv("hw2data/pols-month.csv")|>
+  read_csv("hw2data/pols-month.csv",na=c("NA",".",""))|>
   janitor::clean_names()|>
   separate(mon,into=c("year","month","day"), sep = "-")|>
   mutate(month=case_match(
@@ -45,7 +45,7 @@ pols_month_df=
 #### clean the data in snp.csv
 ```{r}
 snp_df=
-  read_csv("hw2data/snp.csv")|>
+  read_csv("hw2data/snp.csv",na=c("NA",".",""))|>
   janitor::clean_names()|>
   separate(date,into=c("month","day","year"), sep = "/")|>
   mutate(month=case_match(
@@ -74,7 +74,7 @@ snp_df=
 #### clean the data in unemployment.csv
 ```{r}
 unemployment_df=
-  read_csv("hw2data/unemployment.csv")|>
+  read_csv("hw2data/unemployment.csv",na=c("NA",".",""))|>
   pivot_longer(
     Jan:Dec,
     names_to = "month",
@@ -92,11 +92,48 @@ pols_snp_unemployment_df=
 write_csv(pols_snp_unemployment_df,"HW2_Problem_1.csv")
 ```
 
+#### short answer for problem 1
+After cleaning and merging these datasets, the resulting panel data frame has 11 variables, spanning the years 1947 to 2015. Key variables include year, month, counts of Democratic and Republican governors, senators, and representatives (gov_gop, gov_dem, sen_gop, sen_dem, rep_gop, rep_dem), the new president variable (with values "gop" or "dem"), the close variable for S&P index values, and unemployment_rate. This combined dataset enables a joint analysis of political leadership, stock market performance, unemployment, and macroeconomic cycles across around 70 years.
+
 ## Problem 2
 ```{r}
-trash_wheel_df=
-  read_excel("hw2data/202409 Trash Wheel Collection Data.xlsx",na=c("NA",".",""))|>
+Mr_trash_df=
+  read_excel("hw2data/202409 Trash Wheel Collection Data.xlsx",sheet = "Mr. Trash Wheel",na=c("NA",".",""))|>
+  janitor::clean_names()|>
+  mutate(sports_balls=as.integer(sports_balls))
+
+Professor_trash_df= 
+  read_excel("hw2data/202409 Trash Wheel Collection Data.xlsx",sheet = "Professor Trash Wheel",na=c("NA",".",""))|>
   janitor::clean_names()
 
+Gwynnda_trash_df= 
+  read_excel("hw2data/202409 Trash Wheel Collection Data.xlsx",sheet = "Gwynnda Trash Wheel",na=c("NA",".",""))|>
+  janitor::clean_names()
+
+Gwynnda_Professor_df=
+  left_join()
+```
+
+## Problem 3
+```{r}
+zip_code_df=
+  read_csv("zillow_data/Zip Codes.csv",na=c("NA",".",""))|>
+  janitor::clean_names()|>
+  select(-file_date)
+zip_zori_df=
+  read_csv("zillow_data/Zip_zori_uc_sfrcondomfr_sm_month_NYC.csv",na=c("NA",".",""))|>
+  janitor::clean_names()|>
+  mutate(zip_code=region_name)|>
+  select(-region_type,-region_name,-state_name,-state,-city,-metro, -county_name)
+
+zip_df=
+  left_join(zip_code_df,zip_zori_df,by=c("zip_code"))|>
+  relocate(zip_code)
+write_csv(zip_df,"zip_zillow.csv")
+```
+
+```{r}
+drop_df=
+  select(zip_df,"x2020_01_31":"x2021_01_31")
 ```
 
