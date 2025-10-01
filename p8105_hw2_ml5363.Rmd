@@ -98,42 +98,94 @@ After cleaning and merging these datasets, the resulting panel data frame has 11
 ## Problem 2
 ```{r}
 Mr_trash_df=
-  read_excel("hw2data/202409 Trash Wheel Collection Data.xlsx",sheet = "Mr. Trash Wheel",na=c("NA",".",""))|>
+  read_excel("hw2data/202509 Trash Wheel Collection Data.xlsx",sheet = "Mr. Trash Wheel",skip=1,na=c("NA",".",""))|>
   janitor::clean_names()|>
-  mutate(sports_balls=as.integer(sports_balls))
+  select(-x15,-x16)|>
+  mutate(sports_balls=as.integer(sports_balls))|>
+  mutate(name="Mr.trash")|>
+  mutate(year = as.integer(year))
 
 Professor_trash_df= 
-  read_excel("hw2data/202409 Trash Wheel Collection Data.xlsx",sheet = "Professor Trash Wheel",na=c("NA",".",""))|>
-  janitor::clean_names()
+  read_excel("hw2data/202509 Trash Wheel Collection Data.xlsx",sheet = "Professor Trash Wheel",skip=1,na=c("NA",".",""))|>
+  janitor::clean_names()|>
+  mutate(name="Professor")|>
+  mutate(year = as.integer(year))
 
 Gwynnda_trash_df= 
-  read_excel("hw2data/202409 Trash Wheel Collection Data.xlsx",sheet = "Gwynnda Trash Wheel",na=c("NA",".",""))|>
-  janitor::clean_names()
+  read_excel("hw2data/202509 Trash Wheel Collection Data.xlsx",sheet = "Gwynns Falls Trash Wheel",skip=1, na=c("NA",".",""))|>
+  janitor::clean_names()|>
+  mutate(name="Gwynnda")|>
+  mutate(year = as.integer(year))
 
-Gwynnda_Professor_df=
-  left_join()
+trash_wheel=
+  bind_rows(Mr_trash_df,Professor_trash_df,Gwynnda_trash_df)
+trash_wheel
+
+num_Professor_weight=  
+  select(Professor_trash_df,"weight_tons")|>
+  sum()
+num_cigarette_Gwynnda=
+  filter(Gwynnda_trash_df,month== "June", year== 2022)|>
+  select("cigarette_butts")|>
+  sum()
+
 ```
+#### short answer for Problem 2
+After combining data from the three Trash Wheels into a single tidy dataset, we obtained `r nrow(trash_wheel)` total observations, each with variables such as `dumpster`, `date`, `weight_tons`.
+These data provide insight into the volume and type of debris collected over time by each Trash Wheel. 
+Professor Trash Wheel has collected a total of `r num_Professor_weight` tons of trash, and Gwynnda alone collected `r num_cigarette_Gwynnda` cigarette butts during June 2022.
 
 ## Problem 3
+#### tidy dataset
 ```{r}
 zip_code_df=
   read_csv("zillow_data/Zip Codes.csv",na=c("NA",".",""))|>
   janitor::clean_names()|>
-  select(-file_date)
+  select(-file_date,-state_fips)
 zip_zori_df=
   read_csv("zillow_data/Zip_zori_uc_sfrcondomfr_sm_month_NYC.csv",na=c("NA",".",""))|>
   janitor::clean_names()|>
-  mutate(zip_code=region_name)|>
-  select(-region_type,-region_name,-state_name,-state,-city,-metro, -county_name)
+  rename(zip_code=region_name)|>
+  mutate(county_name = str_remove(county_name, " County$"))|>
+  select(-region_type,-state_name,-state,-city,-metro,-county_name)
 
 zip_df=
   left_join(zip_code_df,zip_zori_df,by=c("zip_code"))|>
   relocate(zip_code)
-write_csv(zip_df,"zip_zillow.csv")
+missing_zip=anti_join(zip_code_df,zip_zori_df,c="zip_code")
+zip_df
 ```
+The resulting tidy dataset contains `r nrow(zip_df)` total observations,
+covering `r n_distinct(zip_df$zip_code)` unique ZIP codes across `r n_distinct(zip_df$neighborhood)` neighborhoods.
+`r n_distinct(missing_zip$zip_code)`appear in the ZIP code dataset but not in the Zillow Rental Price dataset, perhaps due to privacy concerns, the data is missing.
 
+#### January 2021 vs January 2020
 ```{r}
-drop_df=
-  select(zip_df,"x2020_01_31":"x2021_01_31")
+zip_tidy=
+  pivot_longer(
+    zip_df,
+    x2015_01_31:x2024_08_31,
+    names_to = "time",
+    values_to = "zori"
+  )
+zip_tidy2=drop_na(zip_tidy,zori)
+zip_202101=filter(zip_tidy2,time==("x2021_01_31"))
+zip_202001=filter(zip_tidy2,time==("x2020_01_31"))
+zip_20212020=
+  bind_rows(zip_202001,zip_202101)|>
+  relocate(zip_code,county_code, time)|>
+  pivot_wider(
+    names_from = "time",
+    values_from = "zori"
+  )
+zip_20212020
+drop_10=
+  mutate(zip_20212020,drop=x2020_01_31-x2021_01_31)|>
+  arrange(desc(drop))|>
+  slice(1:10)
+drop_10
 ```
-
+#### short answer for Problem 3
+The largest declines were concentrated in Manhattan (New York County), especially in the core areas such as Lower Manhattan and the decline was particularly significant. 
+Possible reasons:
+The pandemic in 2020-2021 severely affected the rental demand in downtown New York. Many residents moved away from high-density communities and shifted to suburbs or areas with more convenient remote working options, resulting in a decline in Manhattan rents.
